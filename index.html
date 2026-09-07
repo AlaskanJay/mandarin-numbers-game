@@ -3,39 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Mandarin Numbers Match</title>
 
 <style>
+
 body{
-    font-family: Arial, sans-serif;
+    font-family:Arial,sans-serif;
+    background:#f4f6fb;
     text-align:center;
-    background:#f5f7fb;
+    padding:15px;
     margin:0;
-    padding:20px;
 }
 
 h1{
-    margin-bottom:10px;
+    margin-bottom:5px;
 }
 
 .lesson{
-    font-size:22px;
+    font-size:24px;
     font-weight:bold;
     margin-bottom:20px;
 }
 
-.grid{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:16px;
+.container{
+    display:flex;
+    justify-content:center;
+    gap:20px;
     max-width:900px;
     margin:auto;
+}
+
+.column{
+    flex:1;
+}
+
+.column h2{
+    margin-bottom:15px;
 }
 
 .card{
     background:white;
     border-radius:24px;
-    min-height:110px;
+    min-height:95px;
+    margin-bottom:15px;
     display:flex;
     justify-content:center;
     align-items:center;
@@ -47,25 +58,35 @@ h1{
 }
 
 .card.selected{
-    background:#dbeafe;
+    background:#bfdbfe;
 }
 
 .card.matched{
-    background:#86efac;
+    background:#4ade80;
     color:white;
 }
 
 #nextBtn{
     margin-top:25px;
     padding:18px 40px;
-    font-size:24px;
     border:none;
     border-radius:18px;
+    font-size:24px;
     background:#2563eb;
     color:white;
     display:none;
     cursor:pointer;
 }
+
+@media(max-width:700px){
+
+    .card{
+        min-height:90px;
+        font-size:34px;
+    }
+
+}
+
 </style>
 </head>
 
@@ -75,7 +96,19 @@ h1{
 
 <div class="lesson" id="lessonTitle"></div>
 
-<div class="grid" id="game"></div>
+<div class="container">
+
+    <div class="column">
+        <h2>Chinese</h2>
+        <div id="chineseColumn"></div>
+    </div>
+
+    <div class="column">
+        <h2>English</h2>
+        <div id="englishColumn"></div>
+    </div>
+
+</div>
 
 <button id="nextBtn">Next Lesson ➜</button>
 
@@ -142,103 +175,168 @@ const lessons = [
 ];
 
 let lessonIndex = 0;
-let selected = [];
-let matchedCount = 0;
+let selectedChinese = null;
+let selectedEnglish = null;
+let matchesFound = 0;
 
 function shuffle(array){
     return [...array].sort(()=>Math.random()-0.5);
 }
 
+function speakChinese(text){
+
+    speechSynthesis.cancel();
+
+    const speech =
+        new SpeechSynthesisUtterance(text);
+
+    speech.lang = "zh-CN";
+    speech.rate = 0.8;
+
+    speechSynthesis.speak(speech);
+}
+
 function loadLesson(){
 
-    document.getElementById("nextBtn").style.display="none";
+    matchesFound = 0;
 
-    selected=[];
-    matchedCount=0;
+    selectedChinese = null;
+    selectedEnglish = null;
+
+    document.getElementById("nextBtn").style.display="none";
 
     const lesson = lessons[lessonIndex];
 
     document.getElementById("lessonTitle").innerText =
         `Lesson ${lessonIndex+1} of ${lessons.length}`;
 
-    const cards=[];
+    const chineseColumn =
+        document.getElementById("chineseColumn");
+
+    const englishColumn =
+        document.getElementById("englishColumn");
+
+    chineseColumn.innerHTML="";
+    englishColumn.innerHTML="";
 
     lesson.forEach(pair=>{
-        cards.push({
-            text:pair[0],
-            match:pair[1]
-        });
 
-        cards.push({
-            text:pair[1],
-            match:pair[0]
-        });
+        const card =
+            document.createElement("div");
+
+        card.className="card";
+
+        card.innerText=pair[0];
+
+        card.onclick=()=>{
+
+            speakChinese(pair[0]);
+
+            document
+            .querySelectorAll("#chineseColumn .card")
+            .forEach(c=>c.classList.remove("selected"));
+
+            card.classList.add("selected");
+
+            selectedChinese={
+                element:card,
+                chinese:pair[0],
+                english:pair[1]
+            };
+
+            checkMatch();
+        };
+
+        chineseColumn.appendChild(card);
     });
 
-    const game=document.getElementById("game");
-    game.innerHTML="";
+    shuffle(lesson).forEach(pair=>{
 
-    shuffle(cards).forEach(card=>{
+        const card =
+            document.createElement("div");
 
-        const div=document.createElement("div");
+        card.className="card";
 
-        div.className="card";
-        div.innerText=card.text;
+        card.innerText=pair[1];
 
-        div.onclick=()=>selectCard(div,card);
+        card.onclick=()=>{
 
-        game.appendChild(div);
+            document
+            .querySelectorAll("#englishColumn .card")
+            .forEach(c=>c.classList.remove("selected"));
+
+            card.classList.add("selected");
+
+            selectedEnglish={
+                element:card,
+                chinese:pair[0],
+                english:pair[1]
+            };
+
+            checkMatch();
+        };
+
+        englishColumn.appendChild(card);
     });
 }
 
-function selectCard(element,card){
+function checkMatch(){
 
-    if(element.classList.contains("matched")) return;
-    if(element.classList.contains("selected")) return;
+    if(!selectedChinese ||
+       !selectedEnglish) return;
 
-    element.classList.add("selected");
+    if(
+        selectedChinese.english ===
+        selectedEnglish.english
+    ){
 
-    selected.push({element,card});
+        selectedChinese.element
+            .classList.add("matched");
 
-    if(selected.length===2){
+        selectedEnglish.element
+            .classList.add("matched");
 
-        const first=selected[0];
-        const second=selected[1];
+        selectedChinese.element.onclick=null;
+        selectedEnglish.element.onclick=null;
 
-        if(first.card.match===second.card.text){
+        matchesFound++;
 
-            first.element.classList.remove("selected");
-            second.element.classList.remove("selected");
+        if(matchesFound===5){
 
-            first.element.classList.add("matched");
-            second.element.classList.add("matched");
-
-            matchedCount++;
-
-            if(matchedCount===5){
-
-                document.getElementById("nextBtn").style.display="inline-block";
-            }
-
-        }else{
-
-            setTimeout(()=>{
-                first.element.classList.remove("selected");
-                second.element.classList.remove("selected");
-            },700);
+            document
+            .getElementById("nextBtn")
+            .style.display="inline-block";
         }
 
-        selected=[];
     }
+    else{
+
+        setTimeout(()=>{
+
+            selectedChinese.element
+                .classList.remove("selected");
+
+            selectedEnglish.element
+                .classList.remove("selected");
+
+        },500);
+    }
+
+    selectedChinese=null;
+    selectedEnglish=null;
 }
 
-document.getElementById("nextBtn").onclick=()=>{
+document.getElementById("nextBtn")
+.onclick=()=>{
 
     lessonIndex++;
 
     if(lessonIndex>=lessons.length){
 
-        alert("Amazing! You finished all Mandarin number lessons!");
+        alert(
+          "Amazing! You finished all lessons!"
+        );
+
         lessonIndex=0;
     }
 
