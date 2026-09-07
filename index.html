@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mandarin Numbers Match</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    text-align:center;
+    background:#f5f7fb;
+    margin:0;
+    padding:20px;
+}
+
+h1{
+    margin-bottom:10px;
+}
+
+.lesson{
+    font-size:22px;
+    font-weight:bold;
+    margin-bottom:20px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:16px;
+    max-width:900px;
+    margin:auto;
+}
+
+.card{
+    background:white;
+    border-radius:24px;
+    min-height:110px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:38px;
+    font-weight:bold;
+    cursor:pointer;
+    box-shadow:0 4px 10px rgba(0,0,0,.15);
+    user-select:none;
+}
+
+.card.selected{
+    background:#dbeafe;
+}
+
+.card.matched{
+    background:#86efac;
+    color:white;
+}
+
+#nextBtn{
+    margin-top:25px;
+    padding:18px 40px;
+    font-size:24px;
+    border:none;
+    border-radius:18px;
+    background:#2563eb;
+    color:white;
+    display:none;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Mandarin Numbers Match</h1>
+
+<div class="lesson" id="lessonTitle"></div>
+
+<div class="grid" id="game"></div>
+
+<button id="nextBtn">Next Lesson ➜</button>
+
+<script>
+
+const lessons = [
+
+[
+["一","1"],
+["二","2"],
+["三","3"],
+["四","4"],
+["五","5"]
+],
+
+[
+["六","6"],
+["七","7"],
+["八","8"],
+["九","9"],
+["十","10"]
+],
+
+[
+["十一","11"],
+["十二","12"],
+["十三","13"],
+["十四","14"],
+["十五","15"]
+],
+
+[
+["二十","20"],
+["三十","30"],
+["四十","40"],
+["五十","50"],
+["六十","60"]
+],
+
+[
+["七十","70"],
+["八十","80"],
+["九十","90"],
+["一百","100"],
+["二百","200"]
+],
+
+[
+["三百","300"],
+["四百","400"],
+["五百","500"],
+["六百","600"],
+["七百","700"]
+],
+
+[
+["八百","800"],
+["九百","900"],
+["一千","1000"],
+["二十五","25"],
+["七十五","75"]
+]
+
+];
+
+let lessonIndex = 0;
+let selected = [];
+let matchedCount = 0;
+
+function shuffle(array){
+    return [...array].sort(()=>Math.random()-0.5);
+}
+
+function loadLesson(){
+
+    document.getElementById("nextBtn").style.display="none";
+
+    selected=[];
+    matchedCount=0;
+
+    const lesson = lessons[lessonIndex];
+
+    document.getElementById("lessonTitle").innerText =
+        `Lesson ${lessonIndex+1} of ${lessons.length}`;
+
+    const cards=[];
+
+    lesson.forEach(pair=>{
+        cards.push({
+            text:pair[0],
+            match:pair[1]
+        });
+
+        cards.push({
+            text:pair[1],
+            match:pair[0]
+        });
+    });
+
+    const game=document.getElementById("game");
+    game.innerHTML="";
+
+    shuffle(cards).forEach(card=>{
+
+        const div=document.createElement("div");
+
+        div.className="card";
+        div.innerText=card.text;
+
+        div.onclick=()=>selectCard(div,card);
+
+        game.appendChild(div);
+    });
+}
+
+function selectCard(element,card){
+
+    if(element.classList.contains("matched")) return;
+    if(element.classList.contains("selected")) return;
+
+    element.classList.add("selected");
+
+    selected.push({element,card});
+
+    if(selected.length===2){
+
+        const first=selected[0];
+        const second=selected[1];
+
+        if(first.card.match===second.card.text){
+
+            first.element.classList.remove("selected");
+            second.element.classList.remove("selected");
+
+            first.element.classList.add("matched");
+            second.element.classList.add("matched");
+
+            matchedCount++;
+
+            if(matchedCount===5){
+
+                document.getElementById("nextBtn").style.display="inline-block";
+            }
+
+        }else{
+
+            setTimeout(()=>{
+                first.element.classList.remove("selected");
+                second.element.classList.remove("selected");
+            },700);
+        }
+
+        selected=[];
+    }
+}
+
+document.getElementById("nextBtn").onclick=()=>{
+
+    lessonIndex++;
+
+    if(lessonIndex>=lessons.length){
+
+        alert("Amazing! You finished all Mandarin number lessons!");
+        lessonIndex=0;
+    }
+
+    loadLesson();
+};
+
+loadLesson();
+
+</script>
+
+</body>
+</html>
